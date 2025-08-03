@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
+Skill-Zero Analyzer - Utilities
 共通ユーティリティクラス
 """
 
 import os
-import time
+import json
 import logging
-from typing import Dict, Any, Optional, List
+from typing import Dict, List, Any, Optional
 from config import config
 
 
@@ -15,17 +16,23 @@ class Logger:
     """ログ管理クラス"""
 
     @staticmethod
-    def setup_logger(name: str, level: str = None) -> logging.Logger:
+    def setup_logger(name: str) -> logging.Logger:
         """ロガーを設定"""
         logger = logging.getLogger(name)
 
         if not logger.handlers:
-            handler = logging.StreamHandler()
-            formatter = logging.Formatter(config.LOG_FORMAT)
-            handler.setFormatter(formatter)
-            logger.addHandler(handler)
+            logger.setLevel(getattr(logging, config.LOG_LEVEL))
 
-        logger.setLevel(getattr(logging, level or config.LOG_LEVEL))
+            # コンソールハンドラー
+            console_handler = logging.StreamHandler()
+            console_handler.setLevel(getattr(logging, config.LOG_LEVEL))
+
+            # フォーマッター
+            formatter = logging.Formatter(config.LOG_FORMAT)
+            console_handler.setFormatter(formatter)
+
+            logger.addHandler(console_handler)
+
         return logger
 
 
@@ -33,21 +40,13 @@ class FileUtils:
     """ファイル操作ユーティリティ"""
 
     @staticmethod
-    def ensure_directory(path: str) -> None:
-        """ディレクトリが存在することを確認"""
-        os.makedirs(path, exist_ok=True)
-
-    @staticmethod
-    def safe_write_json(data: Dict[str, Any], filepath: str) -> bool:
-        """JSONファイルを安全に書き込み"""
+    def ensure_directory(directory: str) -> bool:
+        """ディレクトリが存在しない場合は作成"""
         try:
-            FileUtils.ensure_directory(os.path.dirname(filepath))
-            with open(filepath, 'w', encoding='utf-8') as f:
-                import json
-                json.dump(data, f, ensure_ascii=False, indent=2)
+            os.makedirs(directory, exist_ok=True)
             return True
         except Exception as e:
-            logging.error(f"JSON書き込みエラー: {e}")
+            logging.error(f"ディレクトリ作成エラー ({directory}): {e}")
             return False
 
     @staticmethod
@@ -55,56 +54,33 @@ class FileUtils:
         """JSONファイルを安全に読み込み"""
         try:
             if not os.path.exists(filepath):
+                logging.error(f"ファイルが見つかりません: {filepath}")
                 return None
+
             with open(filepath, 'r', encoding='utf-8') as f:
-                import json
                 return json.load(f)
+
         except Exception as e:
-            logging.error(f"JSON読み込みエラー: {e}")
+            logging.error(f"JSON読み込みエラー ({filepath}): {e}")
             return None
 
-
-class HttpUtils:
-    """HTTP操作ユーティリティ"""
-
     @staticmethod
-    def create_session() -> 'requests.Session':
-        """HTTPセッションを作成"""
-        import requests
+    def safe_write_json(filepath: str, data: Dict[str, Any]) -> bool:
+        """JSONファイルを安全に書き込み"""
+        try:
+            # ディレクトリを作成
+            directory = os.path.dirname(filepath)
+            if directory:
+                FileUtils.ensure_directory(directory)
 
-        session = requests.Session()
-        headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-            'Accept-Language': 'ja,en-US;q=0.9,en;q=0.8',
-            'Accept-Encoding': 'gzip, deflate, br',
-            'DNT': '1',
-            'Connection': 'keep-alive',
-            'Upgrade-Insecure-Requests': '1',
-        }
-        session.headers.update(headers)
-        return session
+            with open(filepath, 'w', encoding='utf-8') as f:
+                json.dump(data, f, ensure_ascii=False, indent=2)
 
-    @staticmethod
-    def safe_request(session: 'requests.Session', url: str,
-                    max_retries: int = None, timeout: int = None) -> Optional['requests.Response']:
-        """安全なHTTPリクエスト"""
-        import requests
+            return True
 
-        max_retries = max_retries or config.MAX_RETRIES
-        timeout = timeout or config.REQUEST_TIMEOUT
-
-        for attempt in range(max_retries):
-            try:
-                response = session.get(url, timeout=timeout)
-                return response
-            except requests.RequestException as e:
-                logging.warning(f"リクエストエラー (試行 {attempt + 1}/{max_retries}): {e}")
-                if attempt < max_retries - 1:
-                    time.sleep(config.RETRY_DELAY)
-
-        logging.error(f"リクエスト失敗: {url}")
-        return None
+        except Exception as e:
+            logging.error(f"JSON書き込みエラー ({filepath}): {e}")
+            return False
 
 
 class DataUtils:
@@ -112,43 +88,77 @@ class DataUtils:
 
     @staticmethod
     def clean_text(text: str) -> str:
-        """テキストをクリーンアップ"""
+        """テキストをクリーニング"""
         if not text:
             return ""
-        return text.strip()
+
+        # 改行と空白を正規化
+        cleaned = text.strip()
+        cleaned = ' '.join(cleaned.split())
+
+        return cleaned
 
     @staticmethod
-    def extract_field_value(soup: 'BeautifulSoup', field_name: str) -> Optional[str]:
-        """HTMLからフィールド値を抽出"""
-        elem = soup.find('dt', string=field_name)
-        if elem and elem.find_next_sibling('dd'):
-            text = elem.find_next_sibling('dd').get_text(strip=True)
-            return DataUtils.clean_text(text) if text != '未登録' else None
-        return None
+    def extract_list_from_text(text: str, keywords: List[str]) -> List[str]:
+        """テキストからキーワードを含む行を抽出"""
+        if not text:
+            return []
+
+        lines = text.split('\n')
+        extracted = []
+
+        for line in lines:
+            line = line.strip()
+            if any(keyword in line for keyword in keywords):
+                extracted.append(line)
+
+        return extracted
 
     @staticmethod
-    def merge_dicts(dict1: Dict[str, Any], dict2: Dict[str, Any]) -> Dict[str, Any]:
-        """辞書を統合（dict2の値で上書き）"""
-        result = dict1.copy()
-        for key, value in dict2.items():
-            if value and (key not in result or not result[key]):
-                result[key] = value
+    def merge_dicts(base: Dict[str, Any], update: Dict[str, Any]) -> Dict[str, Any]:
+        """辞書を統合（updateの値を優先）"""
+        result = base.copy()
+        result.update(update)
         return result
 
 
 class ValidationUtils:
-    """バリデーション用ユーティリティ"""
+    """バリデーションユーティリティ"""
 
     @staticmethod
     def is_valid_url(url: str) -> bool:
         """URLが有効かチェック"""
         if not url or not isinstance(url, str):
             return False
-        return url.strip() != "" and not url.isspace()
+
+        # 基本的なURL形式チェック
+        return url.startswith(('http://', 'https://'))
 
     @staticmethod
-    def is_valid_profile_data(data: Dict[str, Any]) -> bool:
+    def is_valid_profile_data(profile_info: Dict[str, Any]) -> bool:
         """プロフィールデータが有効かチェック"""
-        if not data or not isinstance(data, dict):
+        if not profile_info or not isinstance(profile_info, dict):
             return False
-        return len(data) > 2  # URLとextracted_at以外のデータがあるか
+
+        # 最低限の情報があるかチェック
+        required_fields = ['username']
+        return any(field in profile_info for field in required_fields)
+
+    @staticmethod
+    def is_valid_csv_data(df) -> bool:
+        """CSVデータが有効かチェック"""
+        if df is None or df.empty:
+            return False
+
+        # 必要な列が存在するかチェック
+        required_columns = [
+            config.get_csv_column('nickname'),
+            config.get_csv_column('profile_data')
+        ]
+
+        missing_columns = [col for col in required_columns if col not in df.columns]
+        if missing_columns:
+            logging.warning(f"必要な列が見つかりません: {missing_columns}")
+            return False
+
+        return True

@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{{NAME}}さん - 分析結果</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: "Hiragino Kaku Gothic ProN", "Yu Gothic", "Meiryo",
+          sans-serif;
+        background: #f8f9fa;
+        min-height: 100vh;
+        padding: 20px;
+        line-height: 1.6;
+        color: #333333;
+      }
+
+      .container {
+        max-width: 900px;
+        margin: 0 auto;
+        background: white;
+        border-radius: 15px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+        overflow: hidden;
+      }
+
+      .header {
+        background: #4a90e2 url('https://xs910068.xsrv.jp/find-your-strength/img/header-image.jpeg') center center/cover no-repeat;
+        color: white;
+        padding: 40px 30px;
+        text-align: center;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .header::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(74, 144, 226, 0.8);
+        z-index: 1;
+      }
+
+      .header h1 {
+        font-size: 2.5em;
+        margin-bottom: 10px;
+        position: relative;
+        z-index: 2;
+        color: white;
+        font-weight: 600;
+      }
+
+      .header p {
+        font-size: 1.2em;
+        opacity: 0.9;
+        position: relative;
+        z-index: 2;
+        color: white;
+        font-weight: 300;
+      }
+
+      .content {
+        padding: 40px 30px;
+      }
+
+      .section {
+        margin-bottom: 30px;
+        background: white;
+        border-radius: 12px;
+        padding: 30px;
+        box-shadow: 0 5px 20px rgba(0, 0, 0, 0.05);
+        border-left: 4px solid #4a90e2;
+        transition: transform 0.3s ease;
+      }
+
+      .section:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
+      }
+
+      .section h2 {
+        color: #333333;
+        font-size: 1.8em;
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-weight: 600;
+      }
+
+      .section h2::before {
+        content: "●";
+        font-size: 0.8em;
+        color: #4a90e2;
+        font-weight: bold;
+      }
+
+      .analysis-summary {
+        background: white;
+        border-left: 4px solid #4a90e2;
+      }
+
+      .analysis-summary h2::before {
+        content: "●";
+        font-size: 0.8em;
+      }
+
+      .proposal {
+        background: white;
+        border-left: 4px solid #4a90e2;
+      }
+
+      .proposal h2::before {
+        content: "→";
+        font-size: 1.1em;
+      }
+
+      .tips {
+        background: white;
+        border-left: 4px solid #4a90e2;
+      }
+
+      .tips h2::before {
+        content: "★";
+        font-size: 1.1em;
+      }
+
+      .risk {
+        background: white;
+        border-left: 4px solid #4a90e2;
+      }
+
+      .risk h2::before {
+        content: "!";
+        font-size: 1.1em;
+      }
+
+      .proposal-item {
+        background: #f8f9fa;
+        border-radius: 10px;
+        padding: 20px;
+        margin-bottom: 20px;
+        border-left: 3px solid #4a90e2;
+        box-shadow: 0 3px 10px rgba(0, 0, 0, 0.03);
+        transition: all 0.3s ease;
+      }
+
+      .proposal-item:hover {
+        transform: translateX(2px);
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+      }
+
+      .proposal-item h3 {
+        font-size: 1.4em;
+        margin-bottom: 15px;
+        color: #333333;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-weight: 600;
+      }
+
+      .proposal-item h3::before {
+        content: "▶";
+        font-size: 0.8em;
+        color: #4a90e2;
+        font-weight: bold;
+      }
+
+      .proposal-item p {
+        margin-bottom: 15px;
+        opacity: 0.9;
+        color: #333333;
+        line-height: 1.6;
+      }
+
+      .action-list {
+        background: white;
+        border-radius: 8px;
+        padding: 18px;
+        margin-top: 18px;
+        border: 1px solid #e9ecef;
+      }
+
+      .action-list h4 {
+        margin-bottom: 12px;
+        font-size: 1.1em;
+        color: #333333;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .action-list h4::before {
+        content: "📋";
+        font-size: 1em;
+      }
+
+      .action-list ul {
+        list-style: none;
+        padding-left: 0;
+      }
+
+      .action-list li {
+        padding: 10px 0;
+        border-bottom: 1px solid #e9ecef;
+        position: relative;
+        padding-left: 30px;
+        color: #333333;
+        line-height: 1.5;
+      }
+
+      .action-list li::before {
+        content: "•";
+        position: absolute;
+        left: 8px;
+        top: 10px;
+        color: #4a90e2;
+        font-weight: bold;
+        font-size: 1.2em;
+      }
+
+      .action-list li:last-child {
+        border-bottom: none;
+      }
+
+      .highlight {
+        background: #e3f2fd;
+        padding: 2px 8px;
+        border-radius: 4px;
+        font-weight: 600;
+        color: #333333;
+      }
+
+      .footer {
+        text-align: center;
+        padding: 30px;
+        background: #4a90e2;
+        color: white;
+        font-size: 0.9em;
+      }
+
+      .footer p {
+        margin-bottom: 10px;
+        font-weight: 300;
+      }
+
+      .icon {
+        font-size: 1.2em;
+        margin: 0 6px;
+        color: #4a90e2;
+      }
+
+      .list-item {
+        padding: 12px 0;
+        border-bottom: 1px solid #e9ecef;
+        position: relative;
+        padding-left: 25px;
+        color: #333333;
+        line-height: 1.5;
+      }
+
+      .list-item:last-child {
+        border-bottom: none;
+      }
+
+      .list-item::before {
+        content: "○";
+        position: absolute;
+        left: 8px;
+        top: 12px;
+        color: #4a90e2;
+        font-size: 0.9em;
+      }
+
+      @media (max-width: 768px) {
+        .container {
+          margin: 10px;
+          border-radius: 12px;
+        }
+
+        .header {
+          padding: 30px 20px;
+        }
+
+        .header h1 {
+          font-size: 2em;
+        }
+
+        .content {
+          padding: 30px 20px;
+        }
+
+        .section {
+          padding: 25px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <h1>{{NAME}}さん</h1>
+        <p>分析結果 <span class="icon">●</span></p>
+      </div>
+
+      <div class="content">
+        <div class="section analysis-summary">
+          <h2>現状の分析</h2>
+          {{ANALYSIS_SUMMARY}}
+        </div>
+
+        <div class="section proposal">
+          <h2>得意を活かせる道と副業の可能性</h2>
+          {{PROPOSAL_CONTENT}}
+        </div>
+
+        <div class="section tips">
+          <h2>オフ会でのヒント</h2>
+          {{TIPS_CONTENT}}
+        </div>
+
+        <div class="section risk">
+          <h2>リスク管理・注意点</h2>
+          {{RISK_CONTENT}}
+        </div>
+      </div>
+
+      <div class="footer">
+        <p>
+          <span class="icon">●</span> {{NAME}}さんの新しい一歩を応援しています！
+          <span class="icon">●</span>
+        </p>
+        <p>Generated by Skill-Zero Analyzer AI <span class="icon">●</span></p>
+      </div>
+    </div>
+  </body>
+</html>

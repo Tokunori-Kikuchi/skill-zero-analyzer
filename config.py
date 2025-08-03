@@ -1,50 +1,93 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Skill-Zero Analyzer - Configuration
+設定管理クラス
+"""
+
 import os
-from typing import Optional
-from dataclasses import dataclass
+from typing import Dict, Any
 
 
-@dataclass
 class Config:
-    """アプリケーション設定クラス"""
-
-    # ログ設定
-    LOG_LEVEL: str = "INFO"
-    LOG_FORMAT: str = "%(asctime)s - %(levelname)s - %(message)s"
+    """設定管理クラス"""
 
     # ファイルパス設定
-    PROMPTS_FILE: str = "data/prompts.md"
-    CSV_FILE: str = "spreadsheet_data - form_answer.csv"
-    OUTPUT_DIR: str = "output"
-    PROCESSED_DATA_FILE: str = "output/processed_data.json"
-    DEBUG_FILE: str = "output/debug_summary.txt"
+    CSV_FILE_PATH = "spreadsheet_data - form_answer.csv"
+    PROCESSED_DATA_FILE = "output/processed_data.json"
+    OUTPUT_DIR = "output"
+    DATA_DIR = "data"
 
-    # HTTP設定
-    REQUEST_TIMEOUT: int = 10
-    MAX_RETRIES: int = 3
-    RETRY_DELAY: float = 1.0
+    # ログ設定
+    LOG_LEVEL = "INFO"
+    LOG_FORMAT = "%(asctime)s - %(levelname)s - %(message)s"
+
+    # データ処理設定
+    MIN_PROFILE_SIZE = 1000
+    MAX_RETRY_COUNT = 3
+    REQUEST_TIMEOUT = 30
 
     # プロフィール抽出設定
-    MIN_PROFILE_SIZE: int = 10000
-    PROFILE_INDICATORS: list = None
+    PROFILE_SECTIONS = {
+        'bio': '自己紹介',
+        'location': '出身地',
+        'job': '職種・職業',
+        'family': '家族構成',
+        'libecity_meeting': 'リベ大との出会い',
+        'challenges': '挑戦、実践していること、これからやりたいことなど',
+        'hobbies': '趣味・特技',
+        'likes': '好きな〇〇',
+        'skills': '経歴・スキル'
+    }
 
-    # 環境変数
-    LIBECITY_EMAIL: Optional[str] = None
-    LIBECITY_PASSWORD: Optional[str] = None
-
-    def __post_init__(self):
-        """初期化後の処理"""
-        if self.PROFILE_INDICATORS is None:
-            self.PROFILE_INDICATORS = ['プロフィール', 'content_title', '自己紹介']
-
-        # 環境変数から認証情報を取得
-        self.LIBECITY_EMAIL = os.getenv('LIBECITY_EMAIL')
-        self.LIBECITY_PASSWORD = os.getenv('LIBECITY_PASSWORD')
+    # CSV列名マッピング
+    CSV_COLUMNS = {
+        'timestamp': 'タイムスタンプ',
+        'email': 'メールアドレス',
+        'nickname': 'ニックネーム\nリベシティで使用している名前）',
+        'profile_url': 'リベシティの\nプロフィールURL',
+        'profile_data': 'プロフィールデータ',
+        'experience': '今までやってきたこと （仕事／プライベート）',
+        'strengths': '得意と言われたこと／好きなこと',
+        'appreciation': '人に感謝されたこと／頼まれたこと',
+        'not_bad_at': '苦手じゃないこと／つい引き受けてしまうこと',
+        'weaknesses': '「これは苦手...」と思うこと'
+    }
 
     @classmethod
-    def from_env(cls) -> 'Config':
-        """環境変数から設定を読み込み"""
-        return cls()
+    def get_csv_column(cls, key: str) -> str:
+        """CSV列名を取得"""
+        return cls.CSV_COLUMNS.get(key, key)
+
+    @classmethod
+    def validate_paths(cls) -> bool:
+        """必要なパスが存在するかチェック"""
+        required_paths = [
+            cls.CSV_FILE_PATH,
+            cls.DATA_DIR
+        ]
+
+        missing_paths = []
+        for path in required_paths:
+            if not os.path.exists(path):
+                missing_paths.append(path)
+
+        if missing_paths:
+            print(f"エラー: 以下のファイル/ディレクトリが見つかりません: {missing_paths}")
+            return False
+
+        return True
+
+    @classmethod
+    def get_output_path(cls, filename: str) -> str:
+        """出力ファイルのパスを生成"""
+        return os.path.join(cls.OUTPUT_DIR, filename)
+
+    @classmethod
+    def get_data_path(cls, filename: str) -> str:
+        """データファイルのパスを生成"""
+        return os.path.join(cls.DATA_DIR, filename)
 
 
-# グローバル設定インスタンス
-config = Config.from_env()
+# 設定インスタンス
+config = Config()
